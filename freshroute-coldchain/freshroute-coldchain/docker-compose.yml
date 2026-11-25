@@ -1,0 +1,41 @@
+# docker compose up --build
+#   Dispatcher dashboard : http://localhost:3000
+#   Driver app (PWA)     : http://localhost:3000/driver/
+services:
+  api:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      DB_PATH: /data/coldchain.db
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      DEVICE_API_KEY: ${DEVICE_API_KEY:-dev-device-key}
+      SIM_URL: http://simulator:4100
+      # Rules (case-study defaults). Lower these to see alerts faster, e.g. BREACH_SECONDS=30
+      TEMP_THRESHOLD_C: ${TEMP_THRESHOLD_C:-8}
+      BREACH_SECONDS: ${BREACH_SECONDS:-120}
+      OFFLINE_SECONDS: ${OFFLINE_SECONDS:-60}
+    volumes:
+      - coldchain-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  simulator:
+    build: ./simulator
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_URL: http://api:3000
+      DEVICE_API_KEY: ${DEVICE_API_KEY:-dev-device-key}
+      AUTO_FAULTS: ${AUTO_FAULTS:-true}
+    ports:
+      - "4100:4100" # fault-injection control API (also used by the dashboard's demo panel)
+    restart: unless-stopped
+
+volumes:
+  coldchain-data:

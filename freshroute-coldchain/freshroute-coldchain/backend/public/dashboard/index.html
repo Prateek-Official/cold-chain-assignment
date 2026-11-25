@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FreshRoute · Dispatcher</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#/">❄ FreshRoute <span>Dispatcher</span></a>
+    <div class="spacer"></div>
+    <div id="conn" class="conn conn-off" title="Live stream status">● connecting</div>
+    <div id="userbox"></div>
+  </header>
+
+  <!-- Login -->
+  <main id="login-view" class="center" hidden>
+    <form id="login-form" class="card login">
+      <h1>Dispatcher sign in</h1>
+      <label>Username <input name="username" value="dispatcher" autocomplete="username" required /></label>
+      <label>Password <input name="password" type="password" value="dispatch123" autocomplete="current-password" required /></label>
+      <button class="btn primary" type="submit">Sign in</button>
+      <p id="login-error" class="error" role="alert"></p>
+      <p class="hint">Demo logins: <code>dispatcher / dispatch123</code>. Drivers use the <a href="/driver/">driver app</a>.</p>
+    </form>
+  </main>
+
+  <!-- Dashboard -->
+  <main id="dash-view" class="grid" hidden>
+    <section class="panel span-2">
+      <h2>Devices <small id="dev-summary"></small></h2>
+      <div class="table-wrap"><table id="devices" class="table"></table></div>
+    </section>
+
+    <section class="panel alerts-panel" id="alerts-panel">
+      <h2>Live alerts <small id="alert-summary"></small></h2>
+      <div id="alerts" class="feed"></div>
+    </section>
+
+    <section class="panel span-2">
+      <h2 id="chart-title">Temperature</h2>
+      <div id="chart"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Trips</h2>
+      <div class="table-wrap"><table id="trips" class="table"></table></div>
+    </section>
+
+    <section class="panel span-3 demo">
+      <h2>Demo: inject a fault <small>(talks to the simulator)</small></h2>
+      <div class="demo-row">
+        <select id="demo-device"></select>
+        <button class="btn danger" data-fault="spike">🌡 Temperature spike (4 min)</button>
+        <button class="btn" data-fault="offline">📡 Go offline (90 s)</button>
+        <button class="btn" data-fault="duplicate">⧉ Duplicate burst</button>
+        <button class="btn" data-fault="late">⏱ Late message</button>
+        <button class="btn" data-fault="clear">Clear faults</button>
+        <span id="demo-msg" class="hint"></span>
+      </div>
+    </section>
+  </main>
+
+  <!-- Trip detail -->
+  <main id="trip-view" hidden></main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

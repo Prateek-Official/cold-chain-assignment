@@ -1,0 +1,14 @@
+# Next steps: from 10 to 5,000 devices
+
+At 5,000 devices reporting every 5 s that is about **1,000 messages/s**, roughly 86 M readings/day (about 15 GB/day raw at ~170 B each).
+
+1. **Ingestion tier.** Replace HTTP-per-reading with an **MQTT broker** (EMQX/Mosquitto cluster) and per-device credentials/TLS. Ingest workers consume from the broker or a log (**Kafka/Redpanda**), keyed by `deviceId` so each device's messages stay ordered and one worker owns its state. The ingestion API stays as a thin HTTP fallback.
+2. **Storage.** Move readings to **TimescaleDB** (or ClickHouse): time-partitioned hypertables, compression, continuous aggregates (1-min and 1-h rollups) and a retention policy. Keep relational data (users, trips, alerts) in **Postgres**. De-dup on `(device_id, ts)` stays, using `INSERT … ON CONFLICT DO NOTHING` in **batches**.
+3. **Alert engine.** Stop querying history per reading. Run a stream processor (Flink/Kafka Streams, or a keyed worker with Redis state) holding a small per-device window and the last-seen timestamp. Offline detection becomes expiring timers (Redis keys with TTL, or a timer wheel) instead of a table scan. Keep `evaluateBreach` as the shared, tested rule definition.
+4. **Alert quality.** Hysteresis and N-consecutive-sample confirmation, door-aware thresholds, per-cargo-type rules (vaccines vs. produce), severity levels with escalation, de-duplication across a convoy, and an alert snooze/ack workflow with an audit trail.
+5. **Realtime to browsers.** Fan out via **Redis pub/sub** to horizontally scaled API/SSE (or WebSocket) nodes; send *deltas* and throttle to 1 update/s per device per viewer; subscribe dashboards only to the devices on screen (virtualised list).
+6. **API scaling.** Stateless API behind a load balancer, read replicas for dashboards, pagination and cursor APIs for history, and cached "latest state" in Redis so the device list never touches the database.
+7. **Security and multi-tenancy.** Per-device keys with rotation/revocation, OAuth/OIDC with short-lived tokens in `HttpOnly` cookies, login rate limiting, tenant-scoped rows (customer / fleet) and row-level security.
+8. **Mobile.** Native (React Native/Flutter) app with a SQLite-backed outbox, background sync, push notifications (FCM/APNs) for critical alerts, and a conflict-aware sync protocol (server returns authoritative trip state with each ack).
+9. **Operations.** Metrics (ingest lag, alert latency, dropped/duplicate rate), structured logs and traces (OpenTelemetry), dead-letter queue for rejected readings, load tests that replay 5,000-device traffic with fault injection, CI running the existing test suite, and infrastructure as code.
+10. **Product.** Live map of vehicle positions, per-trip spoilage-risk score (time-above-threshold integral), exportable compliance reports (e.g. temperature audit trail for vaccine shipments), and trip/device management screens.
